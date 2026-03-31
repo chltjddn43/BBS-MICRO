@@ -250,6 +250,6 @@ def zeroPointShifting_fc(wq_int, w_bitwidth: int=8, group_size: int=16,
 
     wq_int_new = wq_int_new.reshape(K, C)
 
+
     return wq_int_new
 
-    

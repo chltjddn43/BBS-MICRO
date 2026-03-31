@@ -1,0 +1,51 @@
+====================================================================================================
+BBS 알고리즘 압축 성능 비교 요약
+====================================================================================================
+
+모델       : facebook/opt-125m
+양자화     : INT8 (GPTQ)
+레이어 수  : 12개
+그룹 크기  : 16
+Winner 기준: MSE 50% + KL Divergence 50% 종합
+
+----------------------------------------------------------------------------------------------------
+방법별 설명
+----------------------------------------------------------------------------------------------------
+1. RA only      : 모든 채널 RA,  4비트 프루닝 → 유효 4비트
+2. ZS only      : 모든 채널 ZS,  4비트 프루닝 → 유효 4비트
+3. Best of RA/ZS: 그룹별 RA/ZS 중 MSE 낮은 것 선택 → 유효 4비트
+4. RA 2bit      : 모든 채널 RA,  2비트 프루닝 → 유효 6비트
+5. Conservative : 민감채널 10% 보호 + RA 2비트 → 유효 ~6.25비트
+6. Moderate     : 민감채널 20% 보호 + ZS 4비트 → 유효 ~4.25비트
+
+----------------------------------------------------------------------------------------------------
+Layer                                                RA_MSE    RA_KL   ZS_MSE    ZS_KL  Best_MSE   RA2_MSE  Cons_MSE   Mod_MSE     4bit_W     2bit_W      Acc_1st     Comp_1st
+----------------------------------------------------------------------------------------------------
+model.decoder.layers.0.self_attn.k_proj.weight       4.8764   0.2093   2.2878   0.0207    2.2867    0.3015    0.2853    2.0071    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.0.self_attn.v_proj.weight       8.7533   0.4459   4.2953   0.0269    4.2947    0.5642    0.5370    3.7205    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.0.self_attn.q_proj.weight       7.2476   0.3265   3.5166   0.0218    3.5158    0.4651    0.4389    3.0897    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.0.self_attn.out_proj.weight     7.8628   0.3527   3.8025   0.0278    3.8021    0.5083    0.4791    3.2736    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.0.fc1.weight                   10.6438   0.4790   5.4212   0.0421    5.4211    0.6878    0.6397    4.5348    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.0.fc2.weight                    5.6676   0.2909   2.4985   0.0126    2.4977    0.3588    0.3410    2.1602    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.1.self_attn.k_proj.weight       6.0236   0.2771   2.8353   0.0233    2.8342    0.3739    0.3557    2.5158    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.1.self_attn.v_proj.weight       9.7058   0.6129   4.7017   0.0318    4.7016    0.6140    0.5702    3.9440    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.1.self_attn.q_proj.weight       5.2013   0.1722   2.5169   0.0203    2.5150    0.3241    0.2897    1.9847    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.1.self_attn.out_proj.weight     7.4167   0.2889   3.6236   0.0241    3.6233    0.4792    0.4528    3.0920    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.1.fc1.weight                   10.5731   0.4428   5.2689   0.0393    5.2688    0.6660    0.6241    4.5245    ZS_only    RA_2bit Conservative     Moderate
+model.decoder.layers.1.fc2.weight                    5.7886   0.3096   2.3599   0.0357    2.3589    0.3503    0.3389    2.1010    ZS_only    RA_2bit Conservative     Moderate
+----------------------------------------------------------------------------------------------------
+평균 MSE                                               7.4800   0.3506   3.5940   0.0272    3.5933    0.4745    0.4460    3.0790
+
+유효 비트 수 및 압축률
+  RA only      : 4비트   → 압축률 2.0×
+  ZS only      : 4비트   → 압축률 2.0×
+  Best of RA/ZS: 4비트   → 압축률 2.0×
+  RA 2bit      : 6비트   → 압축률 1.33×
+  Conservative : ~6.25비트 → 압축률 1.29×
+  Moderate     : ~4.25비트 → 압축률 1.66×
+
+논문 방식 Winner 규칙
+  4비트 프루닝  → ZS_only
+  2비트 프루닝  → RA_2bit
+  정확도 우선   → Conservative
+  압축률 우선   → Moderate
